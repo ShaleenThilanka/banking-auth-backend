@@ -1,5 +1,6 @@
 // config/database.js
 const { Pool } = require('pg');
+const Logger = require('../utils/logger');
 
 const pool = new Pool({
   host: process.env.DB_HOST || 'localhost',
@@ -10,11 +11,31 @@ const pool = new Pool({
 });
 
 pool.on('connect', () => {
-  console.log('✅ Connected to PostgreSQL database');
+  Logger.success('Connected to PostgreSQL database', {
+    host: process.env.DB_HOST || 'localhost',
+    database: process.env.DB_NAME || 'banking_auth',
+    user: process.env.DB_USER || 'shaliya'
+  });
 });
 
 pool.on('error', (err) => {
-  console.error('❌ Database connection error:', err);
+  Logger.error('Database connection error', err, {
+    host: process.env.DB_HOST || 'localhost',
+    database: process.env.DB_NAME || 'banking_auth'
+  });
 });
+
+// Enhanced query wrapper with error logging
+const originalQuery = pool.query.bind(pool);
+pool.query = function(text, params) {
+  Logger.query(text, params);
+  return originalQuery(text, params).catch((err) => {
+    Logger.error('Database query error', err, {
+      query: text,
+      params: params ? params.map(p => typeof p === 'string' && p.length > 50 ? p.substring(0, 50) + '...' : p) : []
+    });
+    throw err;
+  });
+};
 
 module.exports = pool;

@@ -1,36 +1,19 @@
+// Fraud Routes: RESTful API endpoints for fraud detection data
+// Follows MVC pattern with controller separation
+
 const express = require('express');
-const { authenticateToken } = require('../middleware/auth');
-const pool = require('../config/database');
 const router = express.Router();
+const fraudController = require('../controllers/FraudController');
+const { authenticateToken } = require('../middleware/auth');
 
-// Get fraud alerts
-router.get('/alerts', authenticateToken, async (req, res) => {
-  try {
-    const alerts = await pool.query(
-      'SELECT * FROM fraud_flags WHERE user_id = $1 ORDER BY timestamp DESC LIMIT 10',
-      [req.user.userId]
-    );
-
-    res.json({ alerts: alerts.rows });
-  } catch (error) {
-    console.error('Fraud alerts error:', error);
-    res.status(500).json({ error: 'Internal server error' });
-  }
+// Get fraud alerts for authenticated user
+router.get('/alerts', authenticateToken, (req, res) => {
+  fraudController.getFraudAlerts(req, res);
 });
 
-// Get login history
-router.get('/login-history', authenticateToken, async (req, res) => {
-  try {
-    const history = await pool.query(
-      'SELECT * FROM login_attempts WHERE user_id = $1 ORDER BY timestamp DESC LIMIT 10',
-      [req.user.userId]
-    );
-
-    res.json({ history: history.rows });
-  } catch (error) {
-    console.error('Login history error:', error);
-    res.status(500).json({ error: 'Internal server error' });
-  }
+// Get login history for authenticated user
+router.get('/login-history', authenticateToken, (req, res) => {
+  fraudController.getLoginHistory(req, res);
 });
 
 module.exports = router;

@@ -8,7 +8,6 @@ require('dotenv').config();
 
 const app = express();
 
-// Trust proxy for accurate IP addresses (important for fraud detection)
 app.set('trust proxy', 1);
 
 // Security middleware
@@ -103,7 +102,7 @@ const server = app.listen(PORT, () => {
   
   // Log database connection status
   const pool = require('./config/database');
-  pool.query('SELECT NOW()')
+  pool.query('SELECT NOW() as now')
     .then(() => {
       Logger.success('Database connection established');
     })

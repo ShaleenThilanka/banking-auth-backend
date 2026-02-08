@@ -17,7 +17,7 @@ class AuthService {
     try {
       // Check if user exists
       const userExists = await pool.query(
-        'SELECT id FROM users WHERE email = $1',
+        'SELECT id FROM users WHERE email = ?',
         [email]
       );
 
@@ -40,11 +40,17 @@ class AuthService {
       // Insert user
       const result = await pool.query(
         `INSERT INTO users (email, password_hash, mfa_secret, phone_number) 
-         VALUES ($1, $2, $3, $4) RETURNING id, email, created_at`,
+         VALUES (?, ?, ?, ?)`,
         [email, passwordHash, mfaSecret.base32, phoneNumber]
       );
-
-      const user = result.rows[0];
+      
+      // Get the inserted user (MySQL doesn't support RETURNING)
+      const insertedUser = await pool.query(
+        'SELECT id, email, created_at FROM users WHERE email = ?',
+        [email]
+      );
+      
+      const user = insertedUser.rows[0];
 
       // Generate QR code
       const qrCodeUrl = await qrcode.toDataURL(mfaSecret.otpauth_url);
@@ -72,13 +78,13 @@ class AuthService {
     try {
       // Find user
       const userResult = await pool.query(
-        'SELECT * FROM users WHERE email = $1',
+        'SELECT * FROM users WHERE email = ?',
         [email]
       );
 
       if (userResult.rows.length === 0) {
         await pool.query(
-          'INSERT INTO login_attempts (user_id, ip_address, user_agent, success) VALUES ($1, $2, $3, $4)',
+          'INSERT INTO login_attempts (user_id, ip_address, user_agent, success) VALUES (?, ?, ?, ?)',
           [null, ipAddress, userAgent, false]
         );
         await auditLog(null, 'LOGIN_ATTEMPT', 'auth', null, ipAddress, userAgent, 
@@ -109,12 +115,12 @@ class AuthService {
         }
 
         await pool.query(
-          `UPDATE users SET failed_login_attempts = $1, account_locked_until = $2 WHERE id = $3`,
+          `UPDATE users SET failed_login_attempts = ?, account_locked_until = ? WHERE id = ?`,
           [newFailedAttempts, lockUntil, user.id]
         );
 
         await pool.query(
-          'INSERT INTO login_attempts (user_id, ip_address, user_agent, success) VALUES ($1, $2, $3, $4)',
+          'INSERT INTO login_attempts (user_id, ip_address, user_agent, success) VALUES (?, ?, ?, ?)',
           [user.id, ipAddress, userAgent, false]
         );
 
@@ -126,13 +132,13 @@ class AuthService {
 
       // Reset failed attempts on successful login
       await pool.query(
-        'UPDATE users SET failed_login_attempts = 0, account_locked_until = NULL, last_login_at = CURRENT_TIMESTAMP WHERE id = $1',
+        'UPDATE users SET failed_login_attempts = 0, account_locked_until = NULL, last_login_at = CURRENT_TIMESTAMP WHERE id = ?',
         [user.id]
       );
 
       // Record successful login attempt
       await pool.query(
-        'INSERT INTO login_attempts (user_id, ip_address, user_agent, success) VALUES ($1, $2, $3, $4)',
+        'INSERT INTO login_attempts (user_id, ip_address, user_agent, success) VALUES (?, ?, ?, ?)',
         [user.id, ipAddress, userAgent, true]
       );
 
@@ -182,7 +188,7 @@ class AuthService {
 
       // Get user
       const userResult = await pool.query(
-        'SELECT * FROM users WHERE id = $1',
+        'SELECT * FROM users WHERE id = ?',
         [decoded.userId]
       );
 
@@ -242,7 +248,7 @@ class AuthService {
   async getProfile(userId) {
     try {
       const userResult = await pool.query(
-        'SELECT id, email, phone_number, created_at, last_login_at FROM users WHERE id = $1',
+        'SELECT id, email, phone_number, created_at, last_login_at FROM users WHERE id = ?',
         [userId]
       );
 

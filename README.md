@@ -24,12 +24,12 @@ A secure online banking authentication system with advanced fraud detection capa
 - **MVC Pattern**: Clear separation of concerns
 - **SOLID Principles**: Service-oriented architecture
 - **RESTful API**: Standard REST endpoints
-- **PostgreSQL Database**: Relational database with proper indexing
+- **MySQL Database**: Relational database with InnoDB engine and proper indexing
 
 ## Prerequisites
 
 - Node.js (v16 or higher)
-- PostgreSQL (v12 or higher)
+- MySQL (v8.0 or higher) or MariaDB (v10.3 or higher)
 - npm or yarn
 
 ## Installation
@@ -43,16 +43,18 @@ npm install
 3. Set up the database:
 ```bash
 # Create database
-createdb banking_auth
+mysql -u root -p
+CREATE DATABASE banking_auth CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+EXIT;
 
 # Run schema
-psql -d banking_auth -f database/schema.sql
+mysql -u root -p banking_auth < database/schema.sql
 ```
 
 4. Configure environment variables:
 ```bash
-cp .env.example .env
-# Edit .env with your configuration
+# See ENV_TEMPLATE.md for environment variables
+# Create .env file with your MySQL credentials
 ```
 
 5. Start the server:

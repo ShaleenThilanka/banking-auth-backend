@@ -85,7 +85,7 @@ A secure online banking authentication system with advanced fraud detection capa
 └──────────────────────┼───────────────────────────────────────┘
                        │
 ┌──────────────────────▼───────────────────────────────────────┐
-│              PostgreSQL Database                             │
+│              MySQL Database (InnoDB)                        │
 │  ┌──────────┐  ┌──────────────┐  ┌──────────────┐         │
 │  │  users   │  │login_attempts│  │ fraud_flags   │         │
 │  └──────────┘  └──────────────┘  └──────────────┘         │
@@ -541,7 +541,7 @@ Parse Response:
 }
     ↓
 Store in login_attempts table:
-- geolocation_data (JSONB)
+- geolocation_data (JSON)
 - country_code
 - city
 - latitude
@@ -1286,11 +1286,11 @@ The system is designed to protect customer assets while maintaining usability an
 PORT=5000
 NODE_ENV=development
 
-# Database
+# Database (MySQL)
 DB_HOST=localhost
-DB_PORT=5432
+DB_PORT=3306
 DB_NAME=banking_auth
-DB_USER=shaliya
+DB_USER=root
 DB_PASSWORD=your_password
 
 # JWT
@@ -1316,5 +1316,7 @@ LOG_QUERIES=false
 **Document Version**: 1.0  
 **Last Updated**: January 2024  
 **System Version**: 1.0.0
+
+
 
 

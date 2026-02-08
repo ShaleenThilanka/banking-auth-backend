@@ -28,7 +28,7 @@ async function auditLog(userId, action, resourceType, resourceId, ipAddress, use
     await pool.query(
       `INSERT INTO audit_logs 
        (user_id, action, resource_type, resource_id, ip_address, user_agent, request_data, response_status, severity) 
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)`,
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       [
         userId,
         action,

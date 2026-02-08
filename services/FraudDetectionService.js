@@ -49,7 +49,7 @@ class FraudDetectionService {
       await pool.query(
         `INSERT INTO login_attempts 
          (user_id, ip_address, user_agent, success, geolocation_data, country_code, city, latitude, longitude) 
-         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)`,
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
         [
           userId,
           ipAddress,
@@ -75,7 +75,7 @@ class FraudDetectionService {
       const failedAttempts = await pool.query(
         `SELECT COUNT(*) as count 
          FROM login_attempts 
-         WHERE user_id = $1 AND success = false AND timestamp > NOW() - INTERVAL '15 minutes'`,
+         WHERE user_id = ? AND success = false AND timestamp > DATE_SUB(NOW(), INTERVAL 15 MINUTE)`,
         [userId]
       );
 
@@ -103,7 +103,7 @@ class FraudDetectionService {
       const recentIPs = await pool.query(
         `SELECT COUNT(DISTINCT ip_address) as ip_count 
          FROM login_attempts 
-         WHERE user_id = $1 AND success = true AND timestamp > NOW() - INTERVAL '1 hour'`,
+         WHERE user_id = ? AND success = true AND timestamp > DATE_SUB(NOW(), INTERVAL 1 HOUR)`,
         [userId]
       );
 
@@ -114,7 +114,7 @@ class FraudDetectionService {
         const distinctIPs = await pool.query(
           `SELECT DISTINCT ip_address 
            FROM login_attempts 
-           WHERE user_id = $1 AND success = true AND timestamp > NOW() - INTERVAL '1 hour'`,
+           WHERE user_id = ? AND success = true AND timestamp > DATE_SUB(NOW(), INTERVAL 1 HOUR)`,
           [userId]
         );
 
@@ -148,7 +148,7 @@ class FraudDetectionService {
       const trustedLocations = await pool.query(
         `SELECT country_code, city, is_trusted 
          FROM user_geolocation_profiles 
-         WHERE user_id = $1 AND is_trusted = true`,
+         WHERE user_id = ? AND is_trusted = true`,
         [userId]
       );
 
@@ -171,15 +171,15 @@ class FraudDetectionService {
           const nearestLocation = await pool.query(
             `SELECT latitude, longitude 
              FROM user_geolocation_profiles 
-             WHERE user_id = $1 AND is_trusted = true 
+             WHERE user_id = ? AND is_trusted = true 
              ORDER BY 
                (6371 * acos(
-                 cos(radians($2)) * cos(radians(latitude)) * 
-                 cos(radians(longitude) - radians($3)) + 
-                 sin(radians($2)) * sin(radians(latitude))
+                 cos(radians(?)) * cos(radians(latitude)) * 
+                 cos(radians(longitude) - radians(?)) + 
+                 sin(radians(?)) * sin(radians(latitude))
                )) ASC
              LIMIT 1`,
-            [userId, geoData.latitude, geoData.longitude]
+            [userId, geoData.latitude, geoData.longitude, geoData.latitude]
           );
 
           if (nearestLocation.rows.length > 0) {
@@ -219,7 +219,7 @@ class FraudDetectionService {
       const rapidLogins = await pool.query(
         `SELECT COUNT(*) as count 
          FROM login_attempts 
-         WHERE user_id = $1 AND success = true AND timestamp > NOW() - INTERVAL '5 minutes'`,
+         WHERE user_id = ? AND success = true AND timestamp > DATE_SUB(NOW(), INTERVAL 5 MINUTE)`,
         [userId]
       );
 
@@ -251,7 +251,7 @@ class FraudDetectionService {
       // Check if location profile exists
       const existing = await pool.query(
         `SELECT id, login_count FROM user_geolocation_profiles 
-         WHERE user_id = $1 AND country_code = $2 AND city = $3`,
+         WHERE user_id = ? AND country_code = ? AND city = ?`,
         [userId, geoData.country_code, geoData.city || null]
       );
 
@@ -262,7 +262,7 @@ class FraudDetectionService {
            SET last_seen = CURRENT_TIMESTAMP, 
                login_count = login_count + 1,
                is_trusted = CASE WHEN login_count >= 3 THEN true ELSE is_trusted END
-           WHERE id = $1`,
+           WHERE id = ?`,
           [existing.rows[0].id]
         );
       } else {
@@ -270,7 +270,7 @@ class FraudDetectionService {
         await pool.query(
           `INSERT INTO user_geolocation_profiles 
            (user_id, country_code, city, latitude, longitude, is_trusted) 
-           VALUES ($1, $2, $3, $4, $5, $6)`,
+           VALUES (?, ?, ?, ?, ?, ?)`,
           [
             userId,
             geoData.country_code,
@@ -293,7 +293,7 @@ class FraudDetectionService {
     try {
       await pool.query(
         `INSERT INTO fraud_flags (user_id, reason, severity, ip_address, metadata) 
-         VALUES ($1, $2, $3, $4, $5)`,
+         VALUES (?, ?, ?, ?, ?)`,
         [userId, reason, severity, ipAddress, JSON.stringify(metadata)]
       );
 
@@ -333,9 +333,9 @@ class FraudDetectionService {
     try {
       const result = await pool.query(
         `SELECT * FROM fraud_flags 
-         WHERE user_id = $1 
+         WHERE user_id = ? 
          ORDER BY detected_at DESC 
-         LIMIT $2`,
+         LIMIT ?`,
         [userId, limit]
       );
 
@@ -353,9 +353,9 @@ class FraudDetectionService {
     try {
       const result = await pool.query(
         `SELECT * FROM login_attempts 
-         WHERE user_id = $1 
+         WHERE user_id = ? 
          ORDER BY timestamp DESC 
-         LIMIT $2`,
+         LIMIT ?`,
         [userId, limit]
       );
 

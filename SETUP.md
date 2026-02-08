@@ -6,22 +6,29 @@
 
 Ensure you have the following installed:
 - Node.js (v16 or higher)
-- PostgreSQL (v12 or higher)
+- MySQL (v8.0 or higher) or MariaDB (v10.3 or higher)
 - npm or yarn
 
 ### 2. Database Setup
 
 ```bash
-# Create PostgreSQL database
-createdb banking_auth
+# Login to MySQL
+mysql -u root -p
 
-# Or using psql
-psql -U postgres
-CREATE DATABASE banking_auth;
-\q
+# Create database
+CREATE DATABASE banking_auth CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+
+# Create user (optional, recommended for production)
+CREATE USER 'banking_user'@'localhost' IDENTIFIED BY 'your_secure_password';
+GRANT ALL PRIVILEGES ON banking_auth.* TO 'banking_user'@'localhost';
+FLUSH PRIVILEGES;
+EXIT;
 
 # Run schema
-psql -d banking_auth -f database/schema.sql
+mysql -u root -p banking_auth < database/schema.sql
+
+# Or if using a specific user
+mysql -u banking_user -p banking_auth < database/schema.sql
 ```
 
 ### 3. Backend Setup
@@ -66,11 +73,11 @@ npm run dev
 ### Required Variables
 
 ```env
-# Database
+# Database (MySQL)
 DB_HOST=localhost
-DB_PORT=5432
+DB_PORT=3306
 DB_NAME=banking_auth
-DB_USER=your_db_user
+DB_USER=root
 DB_PASSWORD=your_db_password
 
 # JWT
@@ -123,11 +130,16 @@ node tests/security.test.js
 ### Database Connection Issues
 
 ```bash
-# Check PostgreSQL is running
-sudo systemctl status postgresql
+# Check MySQL is running
+sudo systemctl status mysql
+# Or for MariaDB
+sudo systemctl status mariadb
 
 # Test connection
-psql -U your_user -d banking_auth -c "SELECT 1;"
+mysql -u your_user -p -e "USE banking_auth; SELECT 1;"
+
+# Check if database exists
+mysql -u root -p -e "SHOW DATABASES LIKE 'banking_auth';"
 ```
 
 ### Port Already in Use
@@ -178,7 +190,7 @@ AUTH_RATE_LIMIT_MAX=3
 ## Architecture Overview
 
 ```
-Frontend (React) → Backend (Express) → PostgreSQL
+Frontend (React) → Backend (Express) → MySQL
      ↓                    ↓
   Components        Controllers
      ↓                    ↓
